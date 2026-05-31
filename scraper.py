@@ -28,9 +28,8 @@ HEADERS = [
 def run_actor():
     client = ApifyClient(APIFY_TOKEN)
     run = client.actor(ACTOR_ID).call(run_input={
-        "communityIds": [COMMUNITY_ID],
-        "maxTweets": 200,
-        "addUserInfo": True,
+        "community_id": COMMUNITY_ID,
+        "maxResults": 200,
     })
     items = list(client.dataset(run.default_dataset_id).iterate_items())
     print(f"Fetched {len(items)} tweets from Apify")
