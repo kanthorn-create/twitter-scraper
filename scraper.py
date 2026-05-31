@@ -70,8 +70,13 @@ def classify_treatments(texts):
         messages=[{
             "role": "user",
             "content": (
-                "tweets ต่อไปนี้แต่ละอันเกี่ยวกับหัตถการความงาม "
-                "(botox, filler, laser, mesotherapy, thread lift, hifu, skinbooster ฯลฯ) หรือไม่?\n"
+                "tweets ต่อไปนี้แต่ละอันเข้าข่ายหัตถการความงามหรือไม่?\n"
+                "ให้นับว่าใช่ถ้า tweet พูดถึง:\n"
+                "- เครื่องมือหรืออุปกรณ์หัตถการ (เช่น เข็ม, cannula, เครื่อง laser, HIFU, RF)\n"
+                "- ชื่อหัตถการเฉพาะ (botox, filler, thread lift, mesotherapy, skinbooster, PRP, fat dissolve ฯลฯ)\n"
+                "- คำถามหรือปัญหาที่เกิดจากการทำหัตถการ (เช่น บวม ช้ำ นูน แข็ง หลังทำ)\n"
+                "- การแนะนำหรือรีวิวหัตถการ\n\n"
+                "ไม่นับถ้าพูดถึงแค่ skincare ทั่วไป ครีม เซรั่ม หรือเมคอัพ\n\n"
                 "ตอบเป็นตัวเลขที่ใช่เท่านั้น คั่นด้วย comma เช่น: 1,3,5\n"
                 "ถ้าไม่มีเลยให้ตอบ: NONE\n\n"
                 + numbered
