@@ -33,7 +33,7 @@ def run_actor():
         "maxTweets": 200,
         "addUserInfo": True,
     })
-    items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+    items = list(client.dataset(run.default_dataset_id).iterate_items())
     print(f"Fetched {len(items)} tweets from Apify")
     return items
 
