@@ -12,7 +12,6 @@ ACTOR_ID = "30kuelAvXhDxx4hB8"
 COMMUNITY_ID = "1508883951074439169"
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
-SHEET_NAME = "Tweets"
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -38,16 +37,16 @@ def run_actor():
     return items
 
 
-def get_sheet():
+def get_sheet(sheet_name):
     creds_json = os.environ["GOOGLE_CREDENTIALS_JSON"]
     creds_dict = json.loads(creds_json)
     creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
     gc = gspread.authorize(creds)
     sh = gc.open_by_key(SPREADSHEET_ID)
     try:
-        ws = sh.worksheet(SHEET_NAME)
+        ws = sh.worksheet(sheet_name)
     except gspread.WorksheetNotFound:
-        ws = sh.add_worksheet(title=SHEET_NAME, rows=5000, cols=len(HEADERS))
+        ws = sh.add_worksheet(title=sheet_name, rows=5000, cols=len(HEADERS))
         ws.append_row(HEADERS)
     return ws
 
@@ -81,7 +80,8 @@ def main():
     print("Starting scrape...")
     tweets = run_actor()
 
-    ws = get_sheet()
+    sheet_name = datetime.now(timezone.utc).strftime("%Y-%m")
+    ws = get_sheet(sheet_name)
     existing_ids = get_existing_ids(ws)
     scraped_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
