@@ -31,7 +31,7 @@ def run_actor():
     client = ApifyClient(APIFY_TOKEN)
     run = client.actor(ACTOR_ID).call(run_input={
         "community_id": COMMUNITY_ID,
-        "maxResults": 50,
+        "maxResults": 75,
     })
     items = list(client.dataset(run.default_dataset_id).iterate_items())
     print(f"Fetched {len(items)} tweets from Apify")
