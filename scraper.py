@@ -60,18 +60,18 @@ def get_existing_ids(ws):
 
 
 def tweet_to_row(tweet, scraped_at):
-    author = tweet.get("author", {})
+    tid = tweet.get("tweet_id", "")
     return [
-        tweet.get("id", ""),
-        tweet.get("createdAt", ""),
-        author.get("userName", ""),
-        author.get("name", ""),
+        tid,
+        tweet.get("created_at", ""),
+        tweet.get("screen_name", ""),
+        tweet.get("author", {}).get("name", ""),
         tweet.get("text", ""),
-        tweet.get("retweetCount", 0),
-        tweet.get("replyCount", 0),
-        tweet.get("likeCount", 0),
-        tweet.get("quoteCount", 0),
-        tweet.get("url", f"https://twitter.com/i/web/status/{tweet.get('id', '')}"),
+        tweet.get("retweets", 0),
+        tweet.get("replies", 0),
+        tweet.get("favorites", 0),
+        tweet.get("quotes", 0),
+        f"https://twitter.com/i/web/status/{tid}",
         scraped_at,
     ]
 
@@ -87,7 +87,7 @@ def main():
 
     new_rows = []
     for tweet in tweets:
-        tid = str(tweet.get("id", ""))
+        tid = str(tweet.get("tweet_id", ""))
         if tid and tid not in existing_ids:
             new_rows.append(tweet_to_row(tweet, scraped_at))
 
