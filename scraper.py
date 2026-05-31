@@ -3,6 +3,7 @@ import json
 import time
 from datetime import datetime, timezone
 
+import anthropic
 from apify_client import ApifyClient
 import gspread
 from google.oauth2.service_account import Credentials
@@ -12,6 +13,7 @@ ACTOR_ID = "30kuelAvXhDxx4hB8"
 COMMUNITY_ID = "1508883951074439169"
 
 SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
+ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -58,6 +60,19 @@ def get_existing_ids(ws):
         return set()
 
 
+def is_about_treatment(text):
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    msg = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=10,
+        messages=[{
+            "role": "user",
+            "content": f"tweet นี้เกี่ยวกับหัตถการความงาม (เช่น botox, filler, laser, mesotherapy, thread lift, hifu, skinbooster ฯลฯ) หรือไม่? ตอบแค่ YES หรือ NO\n\n{text}"
+        }]
+    )
+    return msg.content[0].text.strip().upper() == "YES"
+
+
 def tweet_to_row(tweet, scraped_at):
     tid = tweet.get("tweet_id", "")
     return [
@@ -91,8 +106,18 @@ def main():
             new_rows.append(tweet_to_row(tweet, scraped_at))
 
     if new_rows:
+        start_row = len(ws.get_all_values()) + 1
         ws.append_rows(new_rows, value_input_option="USER_ENTERED")
         print(f"Added {len(new_rows)} new tweets to sheet")
+
+        # Highlight rows about treatments in green
+        green = {"red": 0.714, "green": 0.843, "blue": 0.659}
+        for i, row in enumerate(new_rows):
+            text = row[4]  # text column
+            if is_about_treatment(text):
+                row_num = start_row + i
+                ws.format(f"A{row_num}:K{row_num}", {"backgroundColor": green})
+                print(f"  Highlighted row {row_num} (treatment-related)")
     else:
         print("No new tweets to add")
 
