@@ -60,17 +60,29 @@ def get_existing_ids(ws):
         return set()
 
 
-def is_about_treatment(text):
+def classify_treatments(texts):
+    """Classify all tweets in a single API call. Returns list of booleans."""
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    numbered = "\n".join(f"{i+1}. {t}" for i, t in enumerate(texts))
     msg = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=10,
+        max_tokens=500,
         messages=[{
             "role": "user",
-            "content": f"tweet นี้เกี่ยวกับหัตถการความงาม (เช่น botox, filler, laser, mesotherapy, thread lift, hifu, skinbooster ฯลฯ) หรือไม่? ตอบแค่ YES หรือ NO\n\n{text}"
+            "content": (
+                "tweets ต่อไปนี้แต่ละอันเกี่ยวกับหัตถการความงาม "
+                "(botox, filler, laser, mesotherapy, thread lift, hifu, skinbooster ฯลฯ) หรือไม่?\n"
+                "ตอบเป็นตัวเลขที่ใช่เท่านั้น คั่นด้วย comma เช่น: 1,3,5\n"
+                "ถ้าไม่มีเลยให้ตอบ: NONE\n\n"
+                + numbered
+            )
         }]
     )
-    return msg.content[0].text.strip().upper() == "YES"
+    result = msg.content[0].text.strip()
+    if result.upper() == "NONE":
+        return [False] * len(texts)
+    matched = set(int(x.strip()) for x in result.split(",") if x.strip().isdigit())
+    return [i + 1 in matched for i in range(len(texts))]
 
 
 def tweet_to_row(tweet, scraped_at):
@@ -110,14 +122,17 @@ def main():
         ws.append_rows(new_rows, value_input_option="USER_ENTERED")
         print(f"Added {len(new_rows)} new tweets to sheet")
 
-        # Highlight rows about treatments in green
+        # Classify all tweets in 1 API call then highlight
+        texts = [row[4] for row in new_rows]
+        results = classify_treatments(texts)
         green = {"red": 0.714, "green": 0.843, "blue": 0.659}
-        for i, row in enumerate(new_rows):
-            text = row[4]  # text column
-            if is_about_treatment(text):
+        highlighted = 0
+        for i, is_treatment in enumerate(results):
+            if is_treatment:
                 row_num = start_row + i
                 ws.format(f"A{row_num}:K{row_num}", {"backgroundColor": green})
-                print(f"  Highlighted row {row_num} (treatment-related)")
+                highlighted += 1
+        print(f"Highlighted {highlighted} treatment-related tweets")
     else:
         print("No new tweets to add")
 
