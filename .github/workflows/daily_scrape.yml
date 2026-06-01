@@ -2,7 +2,7 @@ name: Daily Twitter Community Scrape
 
 on:
   schedule:
-    - cron: "0 1 * * *"   # 08:00 ICT (UTC+7) ทุกวัน
+    - cron: "1 17 * * *"   # 00:01 ICT (UTC+7) ทุกวัน — ดึงโพสต์ของวันก่อนหน้าทั้งหมด
   workflow_dispatch:        # รันมือได้จาก GitHub UI
 
 jobs:
