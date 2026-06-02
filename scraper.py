@@ -1,11 +1,13 @@
 import os
 import json
-import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from apify_client import ApifyClient
 import gspread
 from google.oauth2.service_account import Credentials
+
+BKK = ZoneInfo("Asia/Bangkok")
 
 APIFY_TOKEN = os.environ["APIFY_TOKEN"]
 ACTOR_ID = "30kuelAvXhDxx4hB8"
@@ -19,10 +21,21 @@ SCOPES = [
 ]
 
 HEADERS = [
-    "tweet_id", "created_at", "author_username", "author_name",
+    "tweet_id", "date_th", "created_at_th", "author_username", "author_name",
     "text", "retweet_count", "reply_count", "like_count", "quote_count",
-    "url", "scraped_at",
+    "url", "scraped_at_th",
 ]
+
+
+def to_bangkok(twitter_time):
+    """แปลงเวลา Twitter ('Mon Jun 01 18:33:00 +0000 2026') เป็นเวลาไทย.
+    คืนค่า (date_th, datetime_th) เช่น ('2026-06-02', '2026-06-02 01:33:00')."""
+    try:
+        dt = datetime.strptime(twitter_time, "%a %b %d %H:%M:%S %z %Y")
+        dt_th = dt.astimezone(BKK)
+        return dt_th.strftime("%Y-%m-%d"), dt_th.strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
+        return "", twitter_time or ""
 
 
 def run_actor():
@@ -60,9 +73,11 @@ def get_existing_ids(ws):
 
 def tweet_to_row(tweet, scraped_at):
     tid = tweet.get("tweet_id", "")
+    date_th, created_at_th = to_bangkok(tweet.get("created_at", ""))
     return [
         tid,
-        tweet.get("created_at", ""),
+        date_th,
+        created_at_th,
         tweet.get("screen_name", ""),
         tweet.get("author", {}).get("name", ""),
         tweet.get("text", ""),
@@ -79,10 +94,11 @@ def main():
     print("Starting scrape...")
     tweets = run_actor()
 
-    sheet_name = datetime.now(timezone.utc).strftime("%Y-%m")
+    now_th = datetime.now(BKK)
+    sheet_name = now_th.strftime("%Y-%m")
     ws = get_sheet(sheet_name)
     existing_ids = get_existing_ids(ws)
-    scraped_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    scraped_at = now_th.strftime("%Y-%m-%d %H:%M:%S")
 
     new_rows = []
     for tweet in tweets:
